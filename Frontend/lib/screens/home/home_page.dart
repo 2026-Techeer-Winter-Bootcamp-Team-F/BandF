@@ -180,12 +180,11 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.chevron_left),
             onPressed: () {
-              setState(() {
-                selectedMonth = DateTime(
-                  selectedMonth.year,
-                  selectedMonth.month - 1,
-                );
-              });
+              final newDate = DateTime(
+                selectedMonth.year,
+                selectedMonth.month - 1,
+              );
+              _onMonthChanged(newDate);
             },
           ),
           Text(
@@ -195,17 +194,24 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: () {
-              setState(() {
-                selectedMonth = DateTime(
-                  selectedMonth.year,
-                  selectedMonth.month + 1,
-                );
-              });
+              final newDate = DateTime(
+                selectedMonth.year,
+                selectedMonth.month + 1,
+              );
+              _onMonthChanged(newDate);
             },
           ),
         ],
       ),
     );
+  }
+
+  void _onMonthChanged(DateTime newDate) {
+    setState(() {
+      selectedMonth = newDate;
+      selectedDate = null;
+    });
+    _loadHomeData();
   }
 
   // 상단 섹션 (누적/주간/월간 스크롤)
@@ -379,24 +385,19 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          // 차트 영역
+          // 차트 영역 (데이터가 없으므로 임시 숨김 처리 하거나 텍스트 내용만 표시)
           Container(
-            height: 200,
+            height: 100, // 높이 축소
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey[50],
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildBarChart('28일', 280000, 380000),
-                _buildBarChart('01.04', 380000, 380000),
-                _buildBarChart('01.11', 260000, 380000),
-                _buildBarChart('01.18', 90000, 380000),
-                _buildBarChart('0', 0, 380000, isToday: true),
-              ],
+            child: const Center(
+              child: Text(
+                "주간 차트 데이터 준비 중입니다.",
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           ),
 
@@ -426,11 +427,6 @@ class _HomePageState extends State<HomePage> {
           ),
 
           const SizedBox(height: 20),
-
-          Text(
-            '지난 4주 평균  ${_formatCurrencyFull(weeklyAverage)}',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
         ],
       ),
     );
@@ -476,27 +472,17 @@ class _HomePageState extends State<HomePage> {
         children: [
           // 차트 영역
           Container(
-            height: 200,
+            height: 100, // 높이 축소
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey[50],
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildMonthlyBar('25.09', 140000, 1700000),
-                _buildMonthlyBar('25.10', 540000, 1700000),
-                _buildMonthlyBar('25.11', 1700000, 1700000),
-                _buildMonthlyBar('25.12', 1400000, 1700000),
-                _buildMonthlyBar(
-                  '26.01',
-                  660000,
-                  1700000,
-                  isCurrentMonth: true,
-                ),
-              ],
+            child: const Center(
+              child: Text(
+                "월간 차트 데이터 준비 중입니다.",
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           ),
 
@@ -524,13 +510,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
           const SizedBox(height: 20),
-
-          Text(
-            '지난 4개월 평균  ${_formatCurrencyFull(754776)}',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
         ],
       ),
     );
@@ -1129,37 +1109,52 @@ class LineChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (lastMonthData.isEmpty && thisMonthData.isEmpty) return;
+
     // 최대값 계산 (스케일링을 위해)
-    final maxValue = lastMonthData.reduce((a, b) => a > b ? a : b);
+    double maxValue = 100000.0; // 기본값
+    if (lastMonthData.isNotEmpty) {
+      maxValue = lastMonthData.reduce((a, b) => a > b ? a : b);
+    }
+    if (thisMonthData.isNotEmpty) {
+      final thisMax = thisMonthData.reduce((a, b) => a > b ? a : b);
+      if (thisMax > maxValue) maxValue = thisMax;
+    }
+    if (maxValue == 0) maxValue = 1.0;
+
     final padding = 10.0;
     final chartWidth = size.width - padding * 2;
     final chartHeight = size.height - padding * 2;
 
     // 지난달 그래프 그리기 (회색, 전체 기간)
-    _drawMonthLine(
-      canvas,
-      lastMonthData,
-      maxValue,
-      chartWidth,
-      chartHeight,
-      padding,
-      Colors.grey.withOpacity(0.3),
-      Colors.grey.withOpacity(0.05),
-      lastMonthData.length,
-    );
+    if (lastMonthData.isNotEmpty) {
+      _drawMonthLine(
+        canvas,
+        lastMonthData,
+        maxValue,
+        chartWidth,
+        chartHeight,
+        padding,
+        Colors.grey.withOpacity(0.3),
+        Colors.grey.withOpacity(0.05),
+        lastMonthData.length,
+      );
+    }
 
     // 이번달 그래프 그리기 (초록색, 현재 날짜까지만)
-    _drawMonthLine(
-      canvas,
-      thisMonthData,
-      maxValue,
-      chartWidth,
-      chartHeight,
-      padding,
-      const Color(0xFF4CAF50),
-      const Color(0xFF4CAF50).withOpacity(0.1),
-      currentDay,
-    );
+    if (thisMonthData.isNotEmpty) {
+      _drawMonthLine(
+        canvas,
+        thisMonthData,
+        maxValue,
+        chartWidth,
+        chartHeight,
+        padding,
+        const Color(0xFF4CAF50),
+        const Color(0xFF4CAF50).withOpacity(0.1),
+        currentDay,
+      );
+    }
 
     // 날짜 레이블 그리기
     _drawLabels(canvas, size, chartWidth, padding);
