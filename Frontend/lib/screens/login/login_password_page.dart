@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/login/signup_complete_page.dart';
 import 'package:my_app/services/api_service.dart';
+import 'package:my_app/screens/main_navigation.dart';
 
 class LoginPasswordPage extends StatefulWidget {
   final String phone;
@@ -14,7 +14,6 @@ class _LoginPasswordPageState extends State<LoginPasswordPage> {
   final TextEditingController _pwController = TextEditingController();
   bool _obscure = true;
   String? _error;
-  bool _isLoading = false;
   final RegExp _passwordRegex = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$');
 
   @override
@@ -23,48 +22,35 @@ class _LoginPasswordPageState extends State<LoginPasswordPage> {
     super.dispose();
   }
 
-  Future<void> _onConfirm() async {
+  void _onConfirm() async {
     final text = _pwController.text.trim();
     if (text.isEmpty) {
       setState(() => _error = '비밀번호를 입력해주세요.');
       return;
     }
-    // 정규식 체크는 서버 정책에 따라 다를 수 있지만 일단 유지
-    /*
     if (!_passwordRegex.hasMatch(text)) {
       setState(() => _error = '비밀번호는 영문, 숫자, 특수문자를 포함한 8자 이상이어야 합니다.');
       return;
     }
-    */
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
 
     try {
-      final cleanPhone = widget.phone.replaceAll(RegExp(r'\D'), '');
-      // 실제 로그인 시도
-      final data = await ApiService.login(cleanPhone, text);
-      final name = data['name'] ?? widget.phone;
-
+      await ApiService.login(widget.phone, text);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => SignupCompletePage(name: name)),
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainNavigation()),
+        (route) => false,
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _error = '로그인 실패: 아이디 또는 비밀번호를 확인해주세요.\n($e)';
-        _isLoading = false;
-      });
+      setState(() => _error = '로그인 실패: ${e.toString().replaceAll("Exception:", "")}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bool _isValidPassword = _pwController.text.trim().isNotEmpty; // Login validation should be permissive
+    final bool _isValidPassword = _passwordRegex.hasMatch(_pwController.text.trim());
     final canProceed = _isValidPassword;
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.white, elevation: 0, iconTheme: const IconThemeData(color: Colors.black)),
@@ -119,15 +105,9 @@ class _LoginPasswordPageState extends State<LoginPasswordPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (canProceed && !_isLoading) ? _onConfirm : null,
+                  onPressed: canProceed ? _onConfirm : null,
                   style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-                  child: _isLoading 
-                    ? const SizedBox(
-                        width: 24, 
-                        height: 24, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                      )
-                    : const Text('확인'),
+                  child: const Text('확인'),
                 ),
               ),
             ],

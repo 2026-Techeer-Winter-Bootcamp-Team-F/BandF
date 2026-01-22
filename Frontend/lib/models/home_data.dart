@@ -1,38 +1,30 @@
-// lib/models/home_data.dart
 import 'package:flutter/material.dart';
 
 class AccumulatedData {
   final int total;
-  final List<DailyAccumulated> dailyData;
+  final List<DailyData> dailyData;
 
-  AccumulatedData({
-    required this.total,
-    required this.dailyData,
-  });
+  AccumulatedData({required this.total, required this.dailyData});
 
   factory AccumulatedData.fromJson(Map<String, dynamic> json) {
-    return AccumulatedData(
-      total: json['total'] as int,
-      dailyData: (json['dailyData'] as List)
-          .map((e) => DailyAccumulated.fromJson(e))
-          .toList(),
-    );
+    var list = json['daily_data'] as List? ?? [];
+    List<DailyData> dailyDataList = list
+        .map((i) => DailyData.fromJson(i))
+        .toList();
+    return AccumulatedData(total: json['total'] ?? 0, dailyData: dailyDataList);
   }
 }
 
-class DailyAccumulated {
-  final int day;
+class DailyData {
+  final String date;
   final double amount;
 
-  DailyAccumulated({
-    required this.day,
-    required this.amount,
-  });
+  DailyData({required this.date, required this.amount});
 
-  factory DailyAccumulated.fromJson(Map<String, dynamic> json) {
-    return DailyAccumulated(
-      day: json['day'] as int,
-      amount: (json['amount'] as num).toDouble(),
+  factory DailyData.fromJson(Map<String, dynamic> json) {
+    return DailyData(
+      date: json['date'] ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
     );
   }
 }
@@ -43,74 +35,13 @@ class DailySummary {
   DailySummary({required this.expenses});
 
   factory DailySummary.fromJson(Map<String, dynamic> json) {
-    final Map<int, int> expenseMap = {};
-    (json['expenses'] as Map<String, dynamic>).forEach((key, value) {
-      expenseMap[int.parse(key)] = value as int;
-    });
-    return DailySummary(expenses: expenseMap);
-  }
-}
-
-class Transaction {
-  final String name;
-  final String category;
-  final int amount;
-  final String? currency;
-
-  Transaction({
-    required this.name,
-    required this.category,
-    required this.amount,
-    this.currency,
-  });
-
-  factory Transaction.fromJson(Map<String, dynamic> json) {
-    return Transaction(
-      name: json['name'] as String,
-      category: json['category'] as String,
-      amount: json['amount'] as int,
-      currency: json['currency'] as String?,
-    );
-  }
-
-  // UI용 아이콘 매핑
-  IconData get icon {
-    switch (category.toLowerCase()) {
-      case 'shopping':
-        return Icons.shopping_bag;
-      case 'food':
-        return Icons.restaurant;
-      case 'cafe':
-        return Icons.coffee;
-      case 'transport':
-        return Icons.directions_bus;
-      case 'money':
-        return Icons.account_balance_wallet;
-      case 'github':
-        return Icons.code;
-      default:
-        return Icons.receipt;
+    Map<int, int> expensesMap = {};
+    if (json['expenses'] != null) {
+      (json['expenses'] as Map).forEach((k, v) {
+        expensesMap[int.parse(k.toString())] = v as int;
+      });
     }
-  }
-
-  // UI용 색상 매핑
-  Color get color {
-    switch (category.toLowerCase()) {
-      case 'shopping':
-        return Colors.grey;
-      case 'food':
-        return Colors.orange;
-      case 'cafe':
-        return Colors.brown;
-      case 'transport':
-        return Colors.blue;
-      case 'money':
-        return Colors.blue;
-      case 'github':
-        return Colors.black;
-      default:
-        return Colors.grey;
-    }
+    return DailySummary(expenses: expensesMap);
   }
 }
 
@@ -120,7 +51,7 @@ class WeeklyData {
   WeeklyData({required this.average});
 
   factory WeeklyData.fromJson(Map<String, dynamic> json) {
-    return WeeklyData(average: json['average'] as int);
+    return WeeklyData(average: json['average'] ?? 0);
   }
 }
 
@@ -130,66 +61,89 @@ class MonthlyData {
   MonthlyData({required this.average});
 
   factory MonthlyData.fromJson(Map<String, dynamic> json) {
-    return MonthlyData(average: json['average'] as int);
+    return MonthlyData(average: json['average'] ?? 0);
   }
 }
 
 class CategoryData {
   final String name;
-  final String emoji;
   final int amount;
   final int change;
   final int percent;
-  final String colorHex;
+  final String emoji;
+  final Color color;
 
   CategoryData({
     required this.name,
-    required this.emoji,
     required this.amount,
     required this.change,
     required this.percent,
-    required this.colorHex,
+    required this.emoji,
+    required this.color,
   });
 
   factory CategoryData.fromJson(Map<String, dynamic> json) {
     return CategoryData(
-      name: json['name'] as String,
-      emoji: json['emoji'] as String,
-      amount: json['amount'] as int,
-      change: json['change'] as int,
-      percent: json['percent'] as int,
-      colorHex: json['color'] as String,
+      name: json['name'] ?? '',
+      amount: json['amount'] ?? 0,
+      change: json['change'] ?? 0,
+      percent: json['percent'] ?? 0,
+      emoji: json['emoji'] ?? '❓',
+      color: _parseColor(json['color']),
     );
   }
 
-  Color get color {
-    return Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+  static Color _parseColor(dynamic colorData) {
+    if (colorData is String) {
+      if (colorData.startsWith('#')) {
+        return Color(int.parse(colorData.replaceFirst('#', '0xff')));
+      }
+    }
+    return Colors.grey;
   }
 }
 
 class MonthComparison {
-  final int thisMonthTotal;
   final int lastMonthSameDay;
-  final List<DailyAccumulated> thisMonthData;
-  final List<DailyAccumulated> lastMonthData;
+  final List<DailyData> lastMonthData;
 
   MonthComparison({
-    required this.thisMonthTotal,
     required this.lastMonthSameDay,
-    required this.thisMonthData,
     required this.lastMonthData,
   });
 
   factory MonthComparison.fromJson(Map<String, dynamic> json) {
+    var list = json['last_month_data'] as List? ?? [];
+    List<DailyData> lastList = list.map((i) => DailyData.fromJson(i)).toList();
     return MonthComparison(
-      thisMonthTotal: json['thisMonthTotal'] as int,
-      lastMonthSameDay: json['lastMonthSameDay'] as int,
-      thisMonthData: (json['thisMonthData'] as List)
-          .map((e) => DailyAccumulated.fromJson(e))
-          .toList(),
-      lastMonthData: (json['lastMonthData'] as List)
-          .map((e) => DailyAccumulated.fromJson(e))
-          .toList(),
+      lastMonthSameDay: json['last_month_same_day'] ?? 0,
+      lastMonthData: lastList,
+    );
+  }
+}
+
+class Transaction {
+  final String name;
+  final int amount;
+  final String? currency;
+  final IconData icon;
+  final Color color;
+
+  Transaction({
+    required this.name,
+    required this.amount,
+    this.currency,
+    required this.icon,
+    required this.color,
+  });
+
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      name: json['name'] ?? 'Unknown',
+      amount: json['amount'] ?? 0,
+      currency: json['currency'],
+      icon: Icons.credit_card, // Default icon
+      color: Colors.blue, // Default color
     );
   }
 }

@@ -11,8 +11,7 @@ class PasswordPage extends StatefulWidget {
   State<PasswordPage> createState() => _PasswordPageState();
 }
 
-class _PasswordPageState extends State<PasswordPage>
-    with SingleTickerProviderStateMixin {
+class _PasswordPageState extends State<PasswordPage> with SingleTickerProviderStateMixin {
   final TextEditingController _pwController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   bool _obscurePw = true;
@@ -25,9 +24,7 @@ class _PasswordPageState extends State<PasswordPage>
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
 
-  final RegExp _pwRule = RegExp(
-    r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$',
-  );
+  final RegExp _pwRule = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$');
 
   @override
   void initState() {
@@ -37,11 +34,20 @@ class _PasswordPageState extends State<PasswordPage>
       duration: const Duration(milliseconds: 600),
     );
 
-    _slideAnimation = Tween<double>(begin: 0.0, end: 80.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: 80.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
@@ -81,16 +87,11 @@ class _PasswordPageState extends State<PasswordPage>
   }
 
   bool get _canProceedInitial {
-    return _pwController.text.isNotEmpty &&
-        _pwError == null &&
-        _pwRule.hasMatch(_pwController.text);
+    return _pwController.text.isNotEmpty && _pwError == null && _pwRule.hasMatch(_pwController.text);
   }
 
   bool get _canComplete {
-    return _confirmController.text.isNotEmpty &&
-        _confirmError == null &&
-        _pwRule.hasMatch(_confirmController.text) &&
-        _confirmController.text == _pwController.text;
+    return _confirmController.text.isNotEmpty && _confirmError == null && _pwRule.hasMatch(_confirmController.text) && _confirmController.text == _pwController.text;
   }
 
   void _onNext() {
@@ -101,27 +102,27 @@ class _PasswordPageState extends State<PasswordPage>
     _animationController.forward();
   }
 
-  Future<void> _onComplete() async {
+  void _onComplete() async {
     if (!_canComplete) return;
 
     try {
-      final cleanPhone = widget.phone.replaceAll(RegExp(r'\D'), '');
-      final pw = _confirmController.text;
-
       // 1. Signup
-      await ApiService.signup(cleanPhone, pw, widget.name);
+      await ApiService.signup(widget.phone, _pwController.text, widget.name);
+
       // 2. Login (to get token)
-      await ApiService.login(cleanPhone, pw);
+      await ApiService.login(widget.phone, _pwController.text);
 
       if (!mounted) return;
+
+      // 3. Navigate
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => BankSelectionPage(name: widget.name)),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('회원가입 오류: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('회원가입 실패: ${e.toString().replaceAll("Exception:", "")}')),
+      );
     }
   }
 
@@ -137,12 +138,8 @@ class _PasswordPageState extends State<PasswordPage>
       errorText: error,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 12),
-      enabledBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: theme.primaryColor, width: 2),
-      ),
+      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
+      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: theme.primaryColor, width: 2)),
       suffixIcon: suffix,
     );
   }
@@ -152,11 +149,7 @@ class _PasswordPageState extends State<PasswordPage>
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      appBar: AppBar(backgroundColor: Colors.white, elevation: 0, iconTheme: const IconThemeData(color: Colors.black)),
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -167,13 +160,8 @@ class _PasswordPageState extends State<PasswordPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _showConfirmField
-                        ? '비밀번호를 재입력해주세요.'
-                        : '최소 8자리 이상\n비밀번호를 입력해주세요.',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    _showConfirmField ? '비밀번호를 재입력해주세요.' : '최소 8자리 이상\n비밀번호를 입력해주세요.',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 18),
 
@@ -184,10 +172,7 @@ class _PasswordPageState extends State<PasswordPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '비밀번호 재확인',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
+                          const Text('비밀번호 재확인', style: TextStyle(fontSize: 12, color: Colors.grey)),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _confirmController,
@@ -203,19 +188,11 @@ class _PasswordPageState extends State<PasswordPage>
                                   if (_confirmController.text.isNotEmpty)
                                     IconButton(
                                       icon: const Icon(Icons.clear),
-                                      onPressed: () => setState(
-                                        () => _confirmController.clear(),
-                                      ),
+                                      onPressed: () => setState(() => _confirmController.clear()),
                                     ),
                                   IconButton(
-                                    icon: Icon(
-                                      _obscureConfirm
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
-                                    ),
-                                    onPressed: () => setState(
-                                      () => _obscureConfirm = !_obscureConfirm,
-                                    ),
+                                    icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
+                                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                                   ),
                                 ],
                               ),
@@ -229,17 +206,11 @@ class _PasswordPageState extends State<PasswordPage>
 
                   // 비밀번호 입력 필드 (이동 애니메이션)
                   Transform.translate(
-                    offset: Offset(
-                      0,
-                      _showConfirmField ? _slideAnimation.value : 0,
-                    ),
+                    offset: Offset(0, _showConfirmField ? _slideAnimation.value : 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '비밀번호',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
+                        const Text('비밀번호', style: TextStyle(fontSize: 12, color: Colors.grey)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _pwController,
@@ -255,17 +226,11 @@ class _PasswordPageState extends State<PasswordPage>
                                 if (_pwController.text.isNotEmpty)
                                   IconButton(
                                     icon: const Icon(Icons.clear),
-                                    onPressed: () =>
-                                        setState(() => _pwController.clear()),
+                                    onPressed: () => setState(() => _pwController.clear()),
                                   ),
                                 IconButton(
-                                  icon: Icon(
-                                    _obscurePw
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () =>
-                                      setState(() => _obscurePw = !_obscurePw),
+                                  icon: Icon(_obscurePw ? Icons.visibility_off : Icons.visibility),
+                                  onPressed: () => setState(() => _obscurePw = !_obscurePw),
                                 ),
                               ],
                             ),
@@ -279,14 +244,12 @@ class _PasswordPageState extends State<PasswordPage>
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _showConfirmField
+                      onPressed: _showConfirmField 
                           ? (_canComplete ? _onComplete : null)
                           : (_canProceedInitial ? _onNext : null),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('확인'),
                     ),
