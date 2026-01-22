@@ -79,20 +79,20 @@ class _HomePageState extends State<HomePage> {
   int get weeklyAverage => weeklyData?.average ?? 0;
   int get monthlyAverage => monthlyData?.average ?? 0;
   Map<int, int> get dailyExpenses =>
-      dailySummary?.expenses ?? _dummyDailyExpenses;
+      dailySummary?.expenses ?? {}; // 더미 데이터 제거
 
   List<double> get thisMonthDailyData {
     return accumulatedData?.dailyData.map((e) => e.amount).toList() ??
-        _dummyThisMonthData;
+        []; // 더미 데이터 제거
   }
 
   List<double> get lastMonthDailyData {
     return monthComparison?.lastMonthData.map((e) => e.amount).toList() ??
-        _dummyLastMonthData;
+        []; // 더미 데이터 제거
   }
 
   Map<String, Map<String, dynamic>> get categoryData {
-    if (categories == null) return _dummyCategoryData;
+    if (categories == null) return {}; // 더미 데이터 제거: 실제 비어있는 상태(버튼 표시)를 보여주기 위함
 
     final Map<String, Map<String, dynamic>> result = {};
     for (var category in categories!) {
@@ -1300,6 +1300,27 @@ class _HomePageState extends State<HomePage> {
             },
             child: const Text('더보기 >'),
           ),
+
+          const SizedBox(height: 24),
+
+          // 카드 연결 버튼 (데이터가 있을 때도 추가 연결 가능하도록)
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BankSelectionPage(name: 'User'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.credit_card, size: 18),
+            label: const Text('카드 연결하기'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              side: const BorderSide(color: Colors.grey),
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -1606,8 +1627,19 @@ class LineChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (lastMonthData.isEmpty && thisMonthData.isEmpty) return;
+
     // 최대값 계산 (스케일링을 위해)
-    final maxValue = lastMonthData.reduce((a, b) => a > b ? a : b);
+    double maxValue = 100000.0; // 기본값
+    if (lastMonthData.isNotEmpty) {
+      maxValue = lastMonthData.reduce((a, b) => a > b ? a : b);
+    }
+    if (thisMonthData.isNotEmpty) {
+      final thisMax = thisMonthData.reduce((a, b) => a > b ? a : b);
+      if (thisMax > maxValue) maxValue = thisMax;
+    }
+    if (maxValue == 0) maxValue = 1.0; // 0으로 나누기 방지
+
     final padding = 10.0;
     final chartWidth = size.width - padding * 2;
     final chartHeight = size.height - padding * 2;
