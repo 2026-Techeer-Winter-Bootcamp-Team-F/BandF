@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'card_analysis_page.dart';
+import 'package:my_app/models/card.dart'; // [추가] CreditCard 모델 import
+import 'package:my_app/widgets/card_image.dart'; // [추가] 카드 이미지 위젯 import
 
+// [수정] CardDetailPage를 CreditCard 타입으로 변경
 class CardDetailPage extends StatelessWidget {
-  final WalletCard card;
+  final CreditCard card; // [수정] WalletCard -> CreditCard
 
   const CardDetailPage({super.key, required this.card});
 
@@ -25,9 +27,18 @@ class CardDetailPage extends StatelessWidget {
               const SizedBox(height: 8),
               Center(child: _buildVerticalCard(context)),
               const SizedBox(height: 10),
-              Text(card.label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              Text(
+                card.name, // [수정] card.label -> card.name
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text(card.maskedNumber, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              Text(
+                card.company, // [수정] card.maskedNumber -> card.company
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
               const SizedBox(height: 18),
 
               // Month selector
@@ -43,7 +54,13 @@ class CardDetailPage extends StatelessWidget {
                         Text('01월', style: TextStyle(color: Colors.black54)),
                       ],
                     ),
-                    const Text('2025년 02월', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+                    const Text(
+                      '2025년 02월',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     Row(
                       children: const [
                         Text('03월', style: TextStyle(color: Colors.black54)),
@@ -63,16 +80,29 @@ class CardDetailPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 6))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Column(
                     children: [
                       const SizedBox(height: 18),
                       // semicircle chart
-                      SemicircleChart(percent: 0.7, received: 23000, total: 33000),
+                      SemicircleChart(
+                        percent: 0.7,
+                        received: 23000,
+                        total: 33000,
+                      ),
                       const SizedBox(height: 12),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18.0,
+                          vertical: 8,
+                        ),
                         child: Column(
                           children: [
                             Row(
@@ -80,12 +110,30 @@ class CardDetailPage extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: Color(0xFF15C1D6))),
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFF15C1D6),
+                                      ),
+                                    ),
                                     const SizedBox(width: 8),
-                                    const Text('내가 받은 혜택', style: TextStyle(fontSize: 13, color: Colors.black87)),
+                                    const Text(
+                                      '내가 받은 혜택',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                Text(_formatWon(23000), style: const TextStyle(fontWeight: FontWeight.w700)),
+                                Text(
+                                  _formatWon(23000),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
@@ -94,12 +142,30 @@ class CardDetailPage extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: Color(0xFF8B5CF6))),
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFF8B5CF6),
+                                      ),
+                                    ),
                                     const SizedBox(width: 8),
-                                    const Text('이 카드의 총 혜택', style: TextStyle(fontSize: 13, color: Colors.black87)),
+                                    const Text(
+                                      '이 카드의 총 혜택',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                Text(_formatWon(33000), style: const TextStyle(fontWeight: FontWeight.w700)),
+                                Text(
+                                  _formatWon(33000),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 18),
@@ -123,15 +189,20 @@ class CardDetailPage extends StatelessWidget {
     final width = MediaQuery.of(context).size.width * 0.5;
     final height = width * 1.6;
 
-    if (card.imagePath != null) {
+    // [수정] CreditCard의 imageUrl을 사용하여 네트워크 이미지 표시
+    if (card.imageUrl != null && card.imageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.asset(
-          card.imagePath!,
+        child: Image.network(
+          card.imageUrl!,
           width: width,
           height: height,
           fit: BoxFit.cover,
           errorBuilder: (c, e, s) => _fallbackCard(width, height),
+          loadingBuilder: (c, child, progress) {
+            if (progress == null) return child;
+            return _fallbackCard(width, height);
+          },
         ),
       );
     }
@@ -144,16 +215,32 @@ class CardDetailPage extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: card.color,
+        color: const Color(0xFF1E88E5), // [수정] 기본 파란색
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.credit_card, size: 56, color: Colors.white.withOpacity(0.9)),
+          Icon(
+            Icons.credit_card,
+            size: 56,
+            color: Colors.white.withOpacity(0.9),
+          ),
           const SizedBox(height: 16),
-          Text(card.bankName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          Text(
+            card.company, // [수정] card.bankName -> card.company
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -171,7 +258,12 @@ class SemicircleChart extends StatelessWidget {
   final int received;
   final int total;
 
-  const SemicircleChart({super.key, required this.percent, required this.received, required this.total});
+  const SemicircleChart({
+    super.key,
+    required this.percent,
+    required this.received,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -185,14 +277,27 @@ class SemicircleChart extends StatelessWidget {
         children: [
           CustomPaint(
             size: Size(width, height),
-            painter: _SemicirclePainter(percent: percent, background: Colors.grey.shade200, color: const Color(0xFF15C1D6)),
+            painter: _SemicirclePainter(
+              percent: percent,
+              background: Colors.grey.shade200,
+              color: const Color(0xFF15C1D6),
+            ),
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('받은 혜택', style: TextStyle(fontSize: 14, color: Colors.black54)),
+              const Text(
+                '받은 혜택',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
               const SizedBox(height: 6),
-              Text(_formatWonStatic(received), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+              Text(
+                _formatWonStatic(received),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ],
           ),
         ],
@@ -212,7 +317,11 @@ class _SemicirclePainter extends CustomPainter {
   final Color color;
   final Color background;
 
-  _SemicirclePainter({required this.percent, required this.color, required this.background});
+  _SemicirclePainter({
+    required this.percent,
+    required this.color,
+    required this.background,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -233,11 +342,23 @@ class _SemicirclePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // draw full semicircle background (180 degrees)
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), math.pi, math.pi, false, bgPaint);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      math.pi,
+      math.pi,
+      false,
+      bgPaint,
+    );
 
     // draw foreground proportional arc from left to right
     final sweep = math.pi * (percent.clamp(0.0, 1.0));
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), math.pi, sweep, false, fgPaint);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      math.pi,
+      sweep,
+      false,
+      fgPaint,
+    );
   }
 
   @override

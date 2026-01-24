@@ -4,11 +4,21 @@ from .models import Card, CardBenefit
 
 # 카드 시리얼라이저
 class CardSerializer(serializers.ModelSerializer):
-    image = serializers.ReadOnlyField(source='card_image_url') # 카드 이미지 URL 매핑
+    image = serializers.SerializerMethodField()  # 절대 URL 변환용
     
     class Meta:
         model = Card 
         fields = ['card_id', 'card_name', 'image']
+
+    def get_image(self, obj):
+        """card_image_url이 상대경로일 때도 절대경로로 반환"""
+        request = self.context.get('request')
+        url = obj.card_image_url
+        if not url:
+            return None
+        if request and url.startswith('/'):
+            return request.build_absolute_uri(url)
+        return url
 
 # 내 카드 목록용 시리얼라이저 (카드 번호 포함)
 class UserCardListSerializer(serializers.Serializer):
@@ -22,7 +32,7 @@ class UserCardListSerializer(serializers.Serializer):
 
 # 추천 카드 시리얼라이저
 class RecommendedCardSerializer(serializers.ModelSerializer):
-    image = serializers.ReadOnlyField(source='card_image_url') # 카드 이미지 URL 매핑
+    image = serializers.SerializerMethodField()  # 절대 URL 변환용
     benefit_summary = serializers.ReadOnlyField(source='benefit_cap_summary') # 혜택 요약 매핑
     annual_fee = serializers.ReadOnlyField(source='annual_fee_domestic') # 국내 연회비 매핑
     annual_fee_international = serializers.ReadOnlyField(source='annual_fee_overseas') # 해외 연회비 매핑
@@ -31,6 +41,15 @@ class RecommendedCardSerializer(serializers.ModelSerializer):
         model = Card
         fields = ['card_id', 'card_name', 'annual_fee', 'annual_fee_international', 
                   'company', 'image', 'benefit_summary']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        url = obj.card_image_url
+        if not url:
+            return None
+        if request and url.startswith('/'):
+            return request.build_absolute_uri(url)
+        return url
         
 
 

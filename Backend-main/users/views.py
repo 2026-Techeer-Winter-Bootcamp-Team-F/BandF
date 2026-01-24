@@ -3,7 +3,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema, OpenApiExample
-from .models import User
+from .models import User, UserCard
+from cards.models import Card
 
 class SignUpView(APIView): # 회원가입 뷰
     @extend_schema(
@@ -53,6 +54,18 @@ class SignUpView(APIView): # 회원가입 뷰
             email=email
         )
         """
+
+        # [테스트 기능] 신규 사용자에게 인기 카드 3개 자동 등록
+        try:
+            popular_cards = Card.objects.filter(card_image_url__isnull=False).exclude(card_image_url='')[:3]
+            for card in popular_cards:
+                UserCard.objects.create(
+                    user=user,
+                    card=card,
+                    card_number=f"****{str(card.card_id).zfill(4)}"  # 더미 카드 번호
+                )
+        except Exception as e:
+            pass  # 카드 등록 실패해도 회원가입은 진행
 
         return Response({"message": "회원가입 성공", "result": {"user_id": user.user_id}}, status=status.HTTP_201_CREATED)
 
