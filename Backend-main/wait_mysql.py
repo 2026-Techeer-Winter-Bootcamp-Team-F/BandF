@@ -16,9 +16,14 @@ def mysql_is_ready():
     # 환경 변수에서 DB 설정 가져오기
     db_host = os.getenv('DB_HOST', 'mysqldb')
     db_user = os.getenv('DB_USER', 'sa')
-    db_password = os.getenv('DB_PASSWORD' , '1234')
+    db_password = os.getenv('DB_PASSWORD')
     db_name = os.getenv('DB_NAME', 'testdb')
     db_port = int(os.getenv('DB_PORT'))
+
+    # 프로덕션 환경에서는 반드시 환경 변수를 설정해야 함
+    if not db_password:
+        logger.warning("DB_PASSWORD not set in environment variables! Using default password for development only.")
+        db_password = '1234'
     while time() - start_time < check_timeout:
         try:
             conn = MySQLdb.connect(

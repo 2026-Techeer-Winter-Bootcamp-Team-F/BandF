@@ -87,11 +87,12 @@ def create_dummy_data(user):
         rand_day = random.randint(1, 22)
         # Create timezone-aware datetime if possible, or naive
         try:
-            spent_date = timezone.datetime(current_year, current_month, rand_day, 
-                                          random.randint(9, 21), random.randint(0, 59), 
+            spent_date = timezone.datetime(current_year, current_month, rand_day,
+                                          random.randint(9, 21), random.randint(0, 59),
                                           tzinfo=timezone.get_current_timezone())
-        except:
-            spent_date = datetime(current_year, current_month, rand_day, 
+        except Exception as e:
+            print(f"Warning: Failed to create timezone-aware datetime: {e}")
+            spent_date = datetime(current_year, current_month, rand_day,
                                   random.randint(9, 21), random.randint(0, 59))
         
         try:

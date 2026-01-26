@@ -359,8 +359,8 @@ class CodefAPIService:
                 if error_msg and ('+' in error_msg or '%' in error_msg):
                     try:
                          error_msg = urllib.parse.unquote_plus(error_msg)
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to decode error message: {e}")
 
                 logger.error(f"Codef API error: {error_msg}")
                 

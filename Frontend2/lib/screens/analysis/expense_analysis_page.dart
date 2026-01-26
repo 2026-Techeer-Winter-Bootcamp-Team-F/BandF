@@ -301,7 +301,6 @@ class _ExpenseAnalysisPageState extends State<ExpenseAnalysisPage>
 
               return InkWell(
                 onTap: () {
-                  print('🔥 ${entry.key} 클릭됨!'); // 디버그: 클릭 감지 확인
                   setState(() {
                     _selectedCategory =
                         _selectedCategory == entry.key ? null : entry.key;
@@ -427,17 +426,12 @@ class _ExpenseAnalysisPageState extends State<ExpenseAnalysisPage>
 
   // 카테고리 클릭 시 차트 위치로 스크롤하는 메서드
   void _scrollToChart() {
-    print('📍 _scrollToChart 호출됨'); // 디버그: 메서드 호출 확인
-    print('📍 현재 스크롤 위치: ${_scrollController.offset}'); // 디버그: 현재 위치
-    
     // 방법 1: 스크롤을 맨 위(0)로 부드럽게 이동
     _scrollController.animateTo(
       0, // 스크롤 목표 위치 (0 = 최상단)
       duration: const Duration(milliseconds: 350), // 애니메이션 시간
       curve: Curves.easeInOut, // 부드러운 애니메이션 곡선
-    ).then((_) {
-      print('✅ 스크롤 완료!'); // 디버그: 스크롤 완료 확인
-    });
+    );
     
     // 방법 2: ensureVisible 사용 (백업 - 필요 시 주석 해제)
     // _chartKey로 식별된 위젯이 화면에 보이도록 스크롤

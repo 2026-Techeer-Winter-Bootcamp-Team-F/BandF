@@ -20,7 +20,7 @@ from .serializers import (
 # 1. 공통 Base 클래스 (인증 및 에러 응답 통일)
 class BaseAuthView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    
+
     auth_error_message = "조회 실패"
     auth_error_reason = "로그인이 필요하거나 만료되었습니다."
     auth_error_code = "AUTH_REQUIRED"
@@ -34,6 +34,21 @@ class BaseAuthView(APIView):
                 "reason": self.auth_error_reason
             }, status=status.HTTP_401_UNAUTHORIZED)
         return response
+
+    def parse_year_month(self, month_str):
+        """
+        Parse year and month from string format YYYY-MM
+        Returns tuple (year, month) or raises ValueError
+        """
+        if not month_str:
+            raise ValueError("월(month) 파라미터가 필요합니다.")
+        try:
+            year, month = map(int, month_str.split('-'))
+            if not (1 <= month <= 12):
+                raise ValueError("월은 1-12 사이의 값이어야 합니다.")
+            return year, month
+        except (ValueError, AttributeError) as e:
+            raise ValueError(f"잘못된 월 형식입니다. YYYY-MM 형식이어야 합니다: {str(e)}")
 
 # 2. 소비 패턴 분석 뷰
 class ConsumptionPatternAnalysisView(BaseAuthView):
@@ -49,11 +64,8 @@ class ConsumptionPatternAnalysisView(BaseAuthView):
         user = request.user    # 인증된 사용자
         target_month = request.query_params.get('month') # YYYY-MM 형식
 
-        if not target_month: # 월 누락시
-            return Response({"message": "필수 파라미터(month)가 누락되었습니다."}, status=400)
-
-        try: # 년, 월 분리
-            year, month = map(int, target_month.split('-'))
+        try:
+            year, month = self.parse_year_month(target_month)
             
             # 1. 내 지출 데이터 조회
             my_expenses = Expense.objects.filter(
@@ -156,11 +168,9 @@ class ShowExpense(BaseAuthView):
     )
     def get(self, request):
         target_month = request.query_params.get('month')
-        if not target_month:
-            return Response({"message": "조회 월(month)이 필요합니다."}, status=400)
 
         try:
-            year, month = map(int, target_month.split('-'))
+            year, month = self.parse_year_month(target_month)
             expenses = Expense.objects.filter(
                 user=request.user, spent_at__year=year, spent_at__month=month, deleted_at__isnull=True
             ).select_related('category', 'user_card__card')
