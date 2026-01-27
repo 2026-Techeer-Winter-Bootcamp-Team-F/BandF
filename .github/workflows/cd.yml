@@ -1,0 +1,56 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [ "CI" ]
+    types: [ completed ]
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: DockerHub Login
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./Backend
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
+
+          sudo docker stop backend || true
+          sudo docker rm backend || true
+
+          sudo docker run -d --name backend \
+            -e DB_NAME=${{ secrets.DB_NAME }} \
+            -e DB_USER=${{ secrets.DB_USER }} \
+            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e DB_HOST=${{ secrets.DB_HOST }} \
+            -e DB_PORT=3306 \
+            -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            -e DEBUG=False \
+            -e CODEF_CLIENT_ID=${{ secrets.CODEF_CLIENT_ID }} \
+            -e CODEF_CLIENT_SECRET=${{ secrets.CODEF_CLIENT_SECRET }} \
+            -e CODEF_CLIENT_PUBLIC=${{ secrets.CODEF_CLIENT_PUBLIC }} \
+            -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+            -p 8000:8000 \
+            --network my-network \
+            ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
