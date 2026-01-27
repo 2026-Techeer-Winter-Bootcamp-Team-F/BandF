@@ -15,6 +15,8 @@ services:
       - "${DB_PORT}:3306" # 외부접속포트:컨테이너내부포트
     volumes:
       - db_data:/var/lib/mysql # 컨테이너가 삭제되어도 DB 데이터는 유지되도록 볼륨 설정
+    networks:
+      - app-network
 
   # 2. Django 백엔드 서비스
   backend:
@@ -40,6 +42,8 @@ services:
     restart: always
     depends_on:
       - mysqldb # DB가 먼저 실행된 후 백엔드 실행
+    networks:
+      - app-network
     # 🔥 --reload 플래그로 코드 변경 자동 감지
     command: >
       bash -c "python wait_mysql.py && 
@@ -60,8 +64,37 @@ services:
       - static_volume:/app/static # backend가 모아놓은 정적 파일을 공유받음
     depends_on:
       - backend
+    networks:
+      - app-network
+
+  prometheus-example:
+    image: prom/prometheus:v2.45.6
+    container_name: prometheus-example
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - app-network
+
+  grafana-example: #서비스 이름
+    image: grafana/grafana:9.5.20 #이미지 이름:태그. 태그는 latest등등도 괜찮습니다.
+    container_name: grafana-example #컨테이너 이름. 아무거나 괜찮습니다
+    volumes:
+      - ./grafana:/etc/grafana/provisioning #그라파나 설정(config) 볼륨. 대부분 불필요 합지만 놔두시는게 좋습니다.
+      - ./grafana/data:/var/lib/grafana #그라파나 대시보드 데이터. 이걸 설정 해둬야지 가상 볼륨을 날리셔도 대시보드들이 남아있습니다.
+    ports:
+      - "3000:3000" #그라파나는 기본적으로 3000번 포트 입니다
+    networks:
+      - app-network #이 부분은 프로메테우스랑 같은 네트워크로 두면 됩니다.
 
 # 공용 볼륨 정의
 volumes:
   db_data:       # MySQL 데이터 저장용
   static_volume: # Django와 Nginx 사이의 정적 파일 공유용
+
+networks:
+  app-network:
+
