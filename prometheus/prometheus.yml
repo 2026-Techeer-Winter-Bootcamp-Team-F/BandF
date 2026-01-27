@@ -1,18 +1,27 @@
 global:
-  scrape_interval: 15s #메트릭 수집 인터벌
-  evaluation_interval: 15s #메트릭 평가 인터벌
+  scrape_interval: 15s  # 메트릭을 15초마다 수집
+  evaluation_interval: 15s  # 규칙을 15초마다 평가
 
+# Alertmanager 설정 (선택사항)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: []
+
+# 규칙 파일 로드 (선택사항)
+# rule_files:
+#   - "alerts.yml"
+
+# 메트릭 수집 대상 설정
 scrape_configs:
-  - job_name: 'prometheus' #프로메테우스 자체 모니터링
+  # Prometheus 자체 모니터링
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090'] #자기 자신은 localhost로 접근
-  # traefik 서비스가 없으므로 주석 처리
-  # - job_name: 'traefik'
-  #   static_configs:
-  #     - targets: ['traefik:8091']
-  
-  # 백엔드 메트릭 수집이 필요하면 아래 주석 해제 (django-prometheus 설치 필요)
-  # - job_name: 'backend'
-  #   static_configs:
-  #     - targets: ['backend:8000']
+      - targets: ['localhost:9090']
 
+  # Django 백엔드 애플리케이션
+  - job_name: 'django_backend'
+    scrape_interval: 10s  # Django는 10초마다 수집
+    static_configs:
+      - targets: ['backend:8000']  # docker-compose 서비스명:포트
+    metrics_path: '/metrics'  # Django Prometheus 메트릭 경로

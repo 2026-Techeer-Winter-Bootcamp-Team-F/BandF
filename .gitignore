@@ -126,6 +126,7 @@ app.*.map.json
 
 # Mono auto generated files
 mono_crash.*
+.claude
 
 # Build results
 [Dd]ebug/

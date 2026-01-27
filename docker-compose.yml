@@ -37,7 +37,7 @@ services:
       # 캐시 파일은 로컬과 격리 (성능 향상)
       - /app/__pycache__
       - /app/**/__pycache__
-      # 정적 파일 공유  
+      # 정적 파일 공유
       - static_volume:/app/static
     restart: always
     depends_on:
@@ -46,7 +46,7 @@ services:
       - app-network
     # 🔥 --reload 플래그로 코드 변경 자동 감지
     command: >
-      bash -c "python wait_mysql.py && 
+      bash -c "python wait_mysql.py &&
       python manage.py collectstatic --noinput &&
       python manage.py migrate &&
       python manage.py collectstatic --noinput &&
@@ -67,34 +67,50 @@ services:
     networks:
       - app-network
 
-  prometheus-example:
-    image: prom/prometheus:v2.45.6
-    container_name: prometheus-example
+  # 4. Prometheus 메트릭 수집 및 저장
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
     ports:
-      - "9090:9090"
+      - "9090:9090"  # Prometheus UI 접속 포트
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml  # Prometheus 설정 파일
+      - prometheus_data:/prometheus  # 메트릭 데이터 저장용 볼륨
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - backend
     networks:
       - app-network
 
-  grafana-example: #서비스 이름
-    image: grafana/grafana:9.5.20 #이미지 이름:태그. 태그는 latest등등도 괜찮습니다.
-    container_name: grafana-example #컨테이너 이름. 아무거나 괜찮습니다
-    volumes:
-      - ./grafana:/etc/grafana/provisioning #그라파나 설정(config) 볼륨. 대부분 불필요 합지만 놔두시는게 좋습니다.
-      - ./grafana/data:/var/lib/grafana #그라파나 대시보드 데이터. 이걸 설정 해둬야지 가상 볼륨을 날리셔도 대시보드들이 남아있습니다.
+  # 5. Grafana 메트릭 시각화 대시보드
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
     ports:
-      - "3000:3000" #그라파나는 기본적으로 3000번 포트 입니다
+      - "3000:3000"  # Grafana UI 접속 포트
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin  # 기본 관리자 계정
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # 기본 관리자 비밀번호 (운영 환경에서는 반드시 변경)
+      - GF_USERS_ALLOW_SIGN_UP=false  # 회원가입 비활성화
+    volumes:
+      - grafana_data:/var/lib/grafana  # Grafana 데이터 저장용 볼륨
+    depends_on:
+      - prometheus
     networks:
-      - app-network #이 부분은 프로메테우스랑 같은 네트워크로 두면 됩니다.
+      - app-network
 
 # 공용 볼륨 정의
 volumes:
   db_data:       # MySQL 데이터 저장용
   static_volume: # Django와 Nginx 사이의 정적 파일 공유용
+  prometheus_data: # Prometheus 메트릭 데이터 저장용
+  grafana_data:    # Grafana 설정 및 대시보드 저장용
 
 networks:
   app-network:
-
